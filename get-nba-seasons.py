@@ -24,13 +24,13 @@ from nba_api.stats.endpoints import playergamelog
 from nba_api.stats.endpoints import leaguedashplayerstats
 
 # 0 one example: get all players in season
-stats25 = leaguedashplayerstats.LeagueDashPlayerStats(
-    season='2025-26',
-    season_type_all_star='Regular Season',
-    per_mode_detailed='Per100Possessions'
-)
-#1 would get playoffs
-df25 = stats25.get_data_frames()[0]
+# stats25 = leaguedashplayerstats.LeagueDashPlayerStats(
+#     season='2025-26',
+#     season_type_all_star='Regular Season',
+#     per_mode_detailed='Per100Possessions'
+# )
+# #1 would get playoffs
+# df25 = stats25.get_data_frames()[0]
 
 #store seasons and stat types
 seasons = []
@@ -48,85 +48,52 @@ master_data = {m: [] for m in measures}
 # advanced_season_dfs = []
 
 # 2. Loop through each season and fetch the data
-for season_str in seasons:
-    print(f"Fetching data for season: {season_str}...")
+for season in seasons:
+    print(f"--- Pulling Season: {season} ---")
+    for measure in measures:
+        try:
+            stats = leaguedashplayerstats.LeagueDashPlayerStats(
+                season=season,
+                season_type_all_star='Regular Season',
+                per_mode_detailed='PerGame',
+                measure_type_detailed_defense=measure
+            )
+            df = stats.get_data_frames()[0]
+            df['SEASON'] = season
+            master_data[measure].append(df)
+            time.sleep(2.6)
+            
+        except Exception as e:
+            print(f"Error [{season} - {measure}]: {e}")
+            time.sleep(10)
 
-    try:
-        # Fetch Regular Season stats (Per 100 Possessions)
-        stats_reg = leaguedashplayerstats.LeagueDashPlayerStats(
-            season=season_str,
-            season_type_all_star='Regular Season',
-            per_mode_detailed='PerGame'
-        )
-        
-        # Extract the DataFrame from the API wrapper
-        df_reg = stats_reg.get_data_frames()[0]
-        
-        # Add a column to track the specific season
-        df_reg['SEASON'] = season_str  
-        regular_season_dfs.append(df_reg)
+# 4. Concatenate and flatten each category
+flattened_dfs = {m: pd.concat(master_data[m], ignore_index=True) for m in measures}
 
-        # Pause to prevent the NBA API from blocking your IP
-        time.sleep(3.0)
+# 5. Merge all categories sequentially on unique identifiers
+final_df = flattened_dfs[measures[0]]
 
-    except Exception as e:
-        print(f"Error fetching season {season_str}: {e}")
-        time.sleep(6)
+for measure in measures[1:]:
+    final_df = pd.merge(
+        final_df, 
+        flattened_dfs[measure], 
+        on=['PLAYER_ID', 'TEAM_ID', 'SEASON'], 
+        suffixes=('', f'_{measure.lower()}')
+    )
 
-    print(f"Fetching advanced data for season: {season_str}...")
-    try:
-        # Fetch Advanced Stats for the Regular Season
-        stats_adv = leaguedashplayerstats.LeagueDashPlayerStats(
-            season=season_str,
-            season_type_all_star='Regular Season',
-            measure_type_detailed_defense='Advanced'  # <-- traditional,adv,scoring,usage,defense
-        )
-        
-        # Extract the DataFrame from the API wrapper
-        df_adv = stats_adv.get_data_frames()[0]
-        
-        # Add a column to track the specific season
-        df_adv['SEASON'] = season_str  
-        advanced_season_dfs.append(df_adv)
+# 6. Drop duplicate columns generated across the datasets
+duplicate_cols = [c for c in final_df.columns if any(c.endswith(f'_{m.lower()}') for m in measures)]
+final_df.drop(columns=duplicate_cols, inplace=True)
 
-        # Pause to prevent the NBA API from blocking your IP
-        time.sleep(2.5)
-
-    except Exception as e:
-        print(f"Error fetching advanced season {season_str}: {e}")
-        time.sleep(6)
-
-    print(f"Fetching scoring type data for season: {season_str}...")
-    try:
-        # Fetch Advanced Stats for the Regular Season
-        stats_adv = leaguedashplayerstats.LeagueDashPlayerStats(
-            season=season_str,
-            season_type_all_star='Regular Season',
-            measure_type_detailed_defense='Advanced'  # <-- traditional,adv,scoring,usage,defense
-        )
-        
-        # Extract the DataFrame from the API wrapper
-        df_adv = stats_adv.get_data_frames()[0]
-        
-        # Add a column to track the specific season
-        df_adv['SEASON'] = season_str  
-        advanced_season_dfs.append(df_adv)
-
-        # Pause to prevent the NBA API from blocking your IP
-        time.sleep(2.5)
-
-    except Exception as e:
-        print(f"Error fetching advanced season {season_str}: {e}")
-        time.sleep(6)
-
-# 3. Combine all individual season data into master DataFrames
-df_all_regular_season = pd.concat(regular_season_dfs, ignore_index=True)
-df_all_advanced = pd.concat(advanced_season_dfs, ignore_index=True)
-# df_all_playoffs = pd.concat(playoffs_dfs, ignore_index=True)
+final_df.to_csv("nba_comprehensive_stats_08_to_25.csv", index=False)
+print(f"Successfully compiled all matrices! Matrix shape: {final_df.shape}")
 
 # Optional: Save the final datasets directly to CSV files
-df_all_regular_season.to_csv("per_game_seasons_08_to_25.csv", index=False)
-df_all_advanced.to_csv("adv_seasons_08_to_25.csv", index=False)
+# df_all_regular_season = pd.concat(regular_season_dfs, ignore_index=True)
+# df_all_advanced = pd.concat(advanced_season_dfs, ignore_index=True)
+
+# df_all_regular_season.to_csv("per_game_seasons_08_to_25.csv", index=False)
+# df_all_advanced.to_csv("adv_seasons_08_to_25.csv", index=False)
 # df_all_playoffs.to_csv("nba_all_playoffs_08_to_25.csv", index=False)
 
 

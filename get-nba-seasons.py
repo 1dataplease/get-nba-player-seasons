@@ -85,7 +85,7 @@ for measure in measures[1:]:
 duplicate_cols = [c for c in final_df.columns if any(c.endswith(f'_{m.lower()}') for m in measures)]
 final_df.drop(columns=duplicate_cols, inplace=True)
 
-final_df.to_csv("nba_comprehensive_stats_08_to_25.csv", index=False)
+final_df.to_csv("2 deliveries\\nba_comprehensive_stats_08_to_25.csv", index=False)
 print(f"Successfully compiled all matrices! Matrix shape: {final_df.shape}")
 
 # Optional: Save the final datasets directly to CSV files
@@ -97,30 +97,30 @@ print(f"Successfully compiled all matrices! Matrix shape: {final_df.shape}")
 # df_all_playoffs.to_csv("nba_all_playoffs_08_to_25.csv", index=False)
 
 
-## get them all into 1 df
-df_combined = pd.merge(
-    df_all_regular_season,
-    df_all_advanced,
-    on=['PLAYER_ID', 'TEAM_ID', 'SEASON'],
-    suffixes=('', '_advanced')  # Handles columns that exist in both datasets
-)
-# Clean up duplicate columns (like overlapping PLAYER_NAME or TEAM_ID fields)
-duplicate_cols = [col for col in df_combined.columns if col.endswith('_advanced')]
-df_combined.drop(columns=duplicate_cols, inplace=True)
+# ## get them all into 1 df
+# df_combined = pd.merge(
+#     df_all_regular_season,
+#     df_all_advanced,
+#     on=['PLAYER_ID', 'TEAM_ID', 'SEASON'],
+#     suffixes=('', '_advanced')  # Handles columns that exist in both datasets
+# )
+# # Clean up duplicate columns (like overlapping PLAYER_NAME or TEAM_ID fields)
+# duplicate_cols = [col for col in df_combined.columns if col.endswith('_advanced')]
+# df_combined.drop(columns=duplicate_cols, inplace=True)
 
-# Save the unified dataset to a CSV file
-df_combined.to_csv("nba_combined_stats_08_to_25.csv", index=False)
-print(f"Merge complete! Final dataset contains {df_combined.shape[1]} columns.")
+# # Save the unified dataset to a CSV file
+# df_combined.to_csv("nba_combined_stats_08_to_25.csv", index=False)
+# print(f"Merge complete! Final dataset contains {df_combined.shape[1]} columns.")
 
 
-# 1. Search for a player to get their unique ID
-nba_players = players.get_players()
-lebron = [p for p in nba_players if p['full_name'] == 'LeBron James'][0]
-lebron_id = lebron['id']
-# 2. Fetch game logs for a specific season
-bron_games = playergamelog.PlayerGameLog(player_id=lebron_id, season='2025-26')
-# 3. Convert the results directly into a Pandas DataFrame
-bron_games2 = bron_games.get_data_frames()[0]
+# # 1. Search for a player to get their unique ID
+# nba_players = players.get_players()
+# lebron = [p for p in nba_players if p['full_name'] == 'LeBron James'][0]
+# lebron_id = lebron['id']
+# # 2. Fetch game logs for a specific season
+# bron_games = playergamelog.PlayerGameLog(player_id=lebron_id, season='2025-26')
+# # 3. Convert the results directly into a Pandas DataFrame
+# bron_games2 = bron_games.get_data_frames()[0]
 
 ## failed below:
 #make sure consoles > new console in env > conda:base

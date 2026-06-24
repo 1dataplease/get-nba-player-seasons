@@ -38,7 +38,10 @@ for year in range(2008, 2025):
     start_year = year
     end_year = str(year + 1)[2:]  # Gets the last two digits of the next year
     seasons.append(f"{start_year}-{end_year}")
-measures = ['Defense', 'Scoring', 'Advanced', 'Misc', 'Usage']
+
+#^(Base)|(Advanced)|(Misc)|(Four Factors)|(Scoring)|(Opponent)|(Usage)|(Defense)$
+measures = ['Base', 'Advanced', 'Usage', 'Scoring', 'Misc', 'Defense']
+per_modes = ['Totals','PerGame']
 
 # 2. Master storage dictionary {measure_type: [list_of_dfs]}
 master_data = {m: [] for m in measures}
@@ -51,21 +54,22 @@ master_data = {m: [] for m in measures}
 for season in seasons:
     print(f"--- Pulling Season: {season} ---")
     for measure in measures:
-        try:
-            stats = leaguedashplayerstats.LeagueDashPlayerStats(
-                season=season,
-                season_type_all_star='Regular Season',
-                per_mode_detailed='PerGame',
-                measure_type_detailed_defense=measure
-            )
-            df = stats.get_data_frames()[0]
-            df['SEASON'] = season
-            master_data[measure].append(df)
-            time.sleep(2.6)
-            
-        except Exception as e:
-            print(f"Error [{season} - {measure}]: {e}")
-            time.sleep(10)
+        for per_mode in per_modes:
+            try:
+                stats = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=season,
+                    season_type_all_star='Regular Season',
+                    per_mode_detailed=per_mode, #total or perGame
+                    measure_type_detailed_defense=measure
+                )
+                df = stats.get_data_frames()[0]
+                df['SEASON'] = season
+                master_data[measure].append(df)
+                time.sleep(2.6)
+                
+            except Exception as e:
+                print(f"Error [{season} - {measure}]: {e}")
+                time.sleep(10)
 
 # 4. Concatenate and flatten each category
 flattened_dfs = {m: pd.concat(master_data[m], ignore_index=True) for m in measures}
